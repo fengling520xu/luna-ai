@@ -1,5 +1,4 @@
-import json, logging
-import requests
+import logging
 
 from sparkdesk_web.core import SparkWeb
 from sparkdesk_api.core import SparkAPI
@@ -16,35 +15,42 @@ class SPARKDESK:
         Configure_logger(file_path)
 
         self.type = data["type"]
-        # web版配置
-        self.cookie = data["cookie"]
-        self.fd = data["fd"]
-        self.GtToken = data["GtToken"]
-        # api版配置
-        self.app_id = data["app_id"]
-        self.api_secret = data["api_secret"]
-        self.api_key = data["api_key"]
+
 
         self.sparkWeb = None
         self.sparkAPI = None
 
-        if self.cookie != "" and self.fd != "" and self.GtToken != "":
+        if data["cookie"] != "" and data["fd"] != "" and data["GtToken"] != "":
             self.sparkWeb = SparkWeb(
-                cookie = self.cookie,
-                fd = self.fd,
-                GtToken = self.GtToken
+                cookie = data["cookie"],
+                fd = data["fd"],
+                GtToken = data["GtToken"]
             )
-        elif self.app_id != "" and self.api_secret != "" and self.api_key != "":
-            self.sparkAPI = SparkAPI(
-                app_id = self.app_id,
-                api_secret = self.api_secret,
-                api_key = self.api_key
-            )
+        elif data["app_id"] != "" and data["api_secret"] != "" and data["api_key"] != "":
+            if data["assistant_id"] == "":
+                self.sparkAPI = SparkAPI(
+                    app_id = data["app_id"],
+                    api_secret = data["api_secret"],
+                    api_key = data["api_key"],
+                    version = data["version"]
+                )
+            else:
+                try:
+                    self.sparkAPI = SparkAPI(
+                        app_id = data["app_id"],
+                        api_secret = data["api_secret"],
+                        api_key = data["api_key"],
+                        version = data["version"],
+                        assistant_id = data["assistant_id"]
+                    )
+                except TypeError as e:
+                    logging.error(e)
+                    logging.error("如果没有assistant_id传参，说明你的sparkdesk-api库版本太低，请更新至最新版本。\n请先激活conda环境，然后更新，参考命令：pip install git+https://gitee.com/ikaros-521/sparkdesk-api -U")
         else:
             logging.info("讯飞星火配置为空")
 
 
-    def get_sparkdesk_resp(self, prompt):
+    def get_resp(self, prompt):
         if self.type == "web":
             return self.sparkWeb.chat(prompt)
         elif self.type == "api":
